@@ -103,14 +103,29 @@ clone_repository(CloneUrl, TargetDir, Name) :-
     ).
 
 % pull updates for existing repository
-pull_repository(RepoPath, Name) :-
+pull_repository(RepoPath, Name, CloneUrl, TargetDir) :-
     format('pulling updates for ~w...~n', [Name]),
     format(atom(Cmd), 'cd ~w && git pull 2>&1', [RepoPath]),
     shell(Cmd, Status),
     (Status = 0 ->
         format('successfully updated ~w~n', [Name])
     ;
-        format('failed to update ~w (status: ~w)~n', [Name, Status])
+        % pull failed - clone to backup location
+        format('pull failed for ~w, creating backup clone...~n', [Name]),
+        get_time(Time),
+        format_time(atom(Timestamp), '%Y%m%d_%H%M%S', Time),
+        format(atom(BackupPath), '~w_conflict_~w', [RepoPath, Timestamp]),
+        format('cloning fresh copy to: ~w~n', [BackupPath]),
+        github_token(Token),
+        atom_string(CloneUrl, CloneUrlStr),
+        replace_url_with_token(CloneUrlStr, Token, AuthUrl),
+        format(atom(CloneCmd), 'git clone ~w ~w 2>&1', [AuthUrl, BackupPath]),
+        shell(CloneCmd, CloneStatus),
+        (CloneStatus = 0 ->
+            format('successfully created backup clone~n')
+        ;
+            format('failed to create backup clone (status: ~w)~n', [CloneStatus])
+        )
     ).
 
 % replace github.com URL with authenticated URL
