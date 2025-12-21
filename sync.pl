@@ -81,7 +81,7 @@ sync_repositories([repo(Name, CloneUrl)|Rest], TargetDir) :-
     format('processing: ~w~n', [Name]),
     format(atom(RepoPath), '~w/~w', [TargetDir, Name]),
     (exists_directory(RepoPath) ->
-        pull_repository(RepoPath, Name)
+        pull_repository(RepoPath, Name, CloneUrl, TargetDir)
     ;
         clone_repository(CloneUrl, TargetDir, Name)
     ),
